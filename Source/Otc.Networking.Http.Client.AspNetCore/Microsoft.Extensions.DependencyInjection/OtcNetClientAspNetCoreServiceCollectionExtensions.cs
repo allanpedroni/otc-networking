@@ -5,7 +5,8 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class OtcNetClientAspNetCoreServiceCollectionExtensions
     {
-        public static IServiceCollection AddAspNetCoreHttpClientFactoryWithCorrelation(this IServiceCollection services)
+        public static IServiceCollection AddAspNetCoreHttpClientFactoryWithCorrelation(
+            this IServiceCollection services)
         {
             if (services == null)
             {
