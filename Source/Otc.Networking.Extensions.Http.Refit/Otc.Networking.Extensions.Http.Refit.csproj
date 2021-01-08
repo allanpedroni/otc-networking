@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <Authors>Ole Consignado</Authors>
+    <Copyright>Ole Consignado (c) 2018</Copyright>
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <PackageProjectUrl>https://github.com/OleConsignado/otc-networking</PackageProjectUrl>
+    <Description>
+      This is a customization of Refit.HttpClientFactory.
+      Sources have been forked from https://github.com/reactiveui/refit/tree/v5.2.4/ then customized by Ole Consignado in order to meet it needs.
+      Original sources should be found at: https://github.com/reactiveui/refit/tree/v5.2.4/Refit.HttpClientFactory
+    </Description>
+    <NeutralLanguage>pt-BR</NeutralLanguage>
+    <Company>Ole Consignado</Company>
+    <PackageLicenseUrl>https://raw.githubusercontent.com/OleConsignado/otc-networking/master/LICENSE</PackageLicenseUrl>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>bin\Debug\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+    <NoWarn>1701;1702;1591</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DocumentationFile>bin\Release\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+    <NoWarn>1701;1702;1591</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />
+    <PackageReference Include="Refit" Version="5.2.4" />
+    <PackageReference Include="Refit.HttpClientFactory" Version="5.2.4" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Otc.Networking.Extensions.Http\Otc.Networking.Extensions.Http.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,31 +1,38 @@
-﻿using Microsoft.AspNetCore.Http;
-using Otc.Networking.Http.Client.Abstractions;
 using System;
 using System.Net.Http;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 
-namespace Otc.Networking.Http.Client.AspNetCore
+namespace Otc.Networking.Extensions.Http
 {
-    internal class HttpClientFactory : IHttpClientFactory
+    internal class CorrelationHeaderHandler : DelegatingHandler
     {
-        private readonly IHttpContextAccessor httpContextAccessor;
-
         private const string XRootCorrelationIdHeaderKey = "X-Root-Correlation-Id";
         private const string XCorrelationIdHeaderKey = "X-Correlation-Id";
         private const string XRootConsumerNameHeaderKey = "X-Root-Consumer-Name";
         private const string XConsumerNameHeaderKey = "X-Consumer-Name";
         private const string XFullTraceHeaderKey = "X-Full-Trace";
-        private static readonly string applicationName =
+        private static readonly string ApplicationName =
             $"{Assembly.GetEntryAssembly().GetName().Name}-{Environment.MachineName}";
 
-        public HttpClientFactory(IHttpContextAccessor httpContextAccessor)
+        private readonly IHttpContextAccessor httpContextAccessor;
+        private readonly ILogger logger;
+
+        public CorrelationHeaderHandler(IHttpContextAccessor httpContextAccessor, ILoggerFactory loggerFactory)
         {
+            logger = loggerFactory?.CreateLogger<CorrelationHeaderHandler>() ??
+                throw new ArgumentNullException(nameof(loggerFactory));
             this.httpContextAccessor = httpContextAccessor ??
                 throw new ArgumentNullException(nameof(httpContextAccessor));
         }
 
-        private void AddCorrelationHeaders(HttpClient httpClient)
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            logger.LogInformation($"{nameof(SendAsync)}. Adding headers...");
+
             var httpContext = httpContextAccessor.HttpContext;
 
             if (httpContext == null)
@@ -52,43 +59,23 @@ namespace Otc.Networking.Http.Client.AspNetCore
                 $"{requestHeaders[XFullTraceHeaderKey]}; " : string.Empty;
 
             // also append traceIdentifier and ApplicationName to XFullTrace
-            fullTraceContent += $"{traceIdentifier} ({applicationName})";
+            fullTraceContent += $"{traceIdentifier} ({ApplicationName})";
 
-            httpClient.DefaultRequestHeaders.Add(XConsumerNameHeaderKey, applicationName);
-            httpClient.DefaultRequestHeaders.Add(XCorrelationIdHeaderKey, traceIdentifier);
-            httpClient.DefaultRequestHeaders.Add(XFullTraceHeaderKey, fullTraceContent);
+            request.Headers.Add(XConsumerNameHeaderKey, ApplicationName);
+            request.Headers.Add(XCorrelationIdHeaderKey, traceIdentifier);
+            request.Headers.Add(XFullTraceHeaderKey, fullTraceContent);
 
             var rootCorrelationId = requestHeaders.ContainsKey(XRootCorrelationIdHeaderKey) ?
                 (string)requestHeaders[XRootCorrelationIdHeaderKey] : traceIdentifier;
             var rootCallerId = requestHeaders.ContainsKey(XRootConsumerNameHeaderKey) ?
-                (string)requestHeaders[XRootConsumerNameHeaderKey] : applicationName;
+                (string)requestHeaders[XRootConsumerNameHeaderKey] : ApplicationName;
 
-            httpClient.DefaultRequestHeaders.Add(XRootCorrelationIdHeaderKey, rootCorrelationId);
-            httpClient.DefaultRequestHeaders.Add(XRootConsumerNameHeaderKey, rootCallerId);
-        }
+            request.Headers.Add(XRootCorrelationIdHeaderKey, rootCorrelationId);
+            request.Headers.Add(XRootConsumerNameHeaderKey, rootCallerId);
 
-        public HttpClient CreateHttpClient()
-        {
-            var httpClient = new HttpClient();
-            AddCorrelationHeaders(httpClient);
+            logger.LogInformation($"{nameof(SendAsync)}. Headers were added...");
 
-            return httpClient;
-        }
-
-        public HttpClient CreateHttpClient(HttpClientHandler handler)
-        {
-            var httpClient = new HttpClient(handler);
-            AddCorrelationHeaders(httpClient);
-
-            return httpClient;
-        }
-
-        public HttpClient CreateHttpClient(HttpClientHandler handler, bool disposeHandler)
-        {
-            var httpClient = new HttpClient(handler, disposeHandler);
-            AddCorrelationHeaders(httpClient);
-
-            return httpClient;
+            return base.SendAsync(request, cancellationToken);
         }
     }
 }
