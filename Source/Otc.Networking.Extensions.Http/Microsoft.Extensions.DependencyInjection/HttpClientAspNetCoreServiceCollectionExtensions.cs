@@ -7,7 +7,7 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class HttpClientAspNetCoreServiceCollectionExtensions
     {
-        public static IServiceCollection AddHttpClientWithCorrelation(
+        public static IHttpClientBuilder AddHttpClientWithCorrelation(
             this IServiceCollection services)
         {
             if (services == null)
@@ -17,11 +17,11 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.TryAddTransient<CorrelationHeaderHandler>();
 
-            services
+            var builder = services
                 .AddHttpClient(Options.Options.DefaultName)
                 .AddHttpMessageHandler<CorrelationHeaderHandler>();
 
-            return services;
+            return builder;
         }
 
         public static IHttpClientBuilder AddHttpClientWithCorrelation(this IServiceCollection services,
